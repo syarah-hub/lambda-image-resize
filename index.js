@@ -51,7 +51,7 @@ exports.handler = function (event, context, callback) {
         }
 
         return imagecont
-            .quality(100)
+            .quality(70)
             .toBuffer(ext, (err, buffer) => {
                 if (err) {
                     console.error(err);
