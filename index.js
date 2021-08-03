@@ -13,18 +13,19 @@ const WATERMARKLIMIT = process.env.WATERMARKLIMIT;
 const ALLOWED_RESOLUTIONS = process.env.ALLOWED_RESOLUTIONS ? new Set(process.env.ALLOWED_RESOLUTIONS.split(/\s*,\s*/)) : new Set([]);
 
 exports.handler = function (event, context, callback) {
+
     const key = event.queryStringParameters.key;
     const match = key.match(/((\d+)x(\d+))\/(.*)/);
     const isSyarah = key.includes('syarah');
     const watermark = 'new_syarah_watermark_new.png';
     //Check if requested resolution is allowed
     if (0 != ALLOWED_RESOLUTIONS.size && !ALLOWED_RESOLUTIONS.has(match[1])) {
-        callback(null, {
+
+        return callback(null, {
             statusCode: '403',
             headers: {},
             body: '',
         });
-        return;
     }
     console.log(match);
     // console.log(key);
@@ -36,26 +37,26 @@ exports.handler = function (event, context, callback) {
     S3.getObject({Bucket: BUCKET, Key: originalKey}, (err, data) => {
         if (err) {
             console.error(err);
-            return callback(err);
+            return callback(err.message);
         }
-        var imagecont = null;
-        if(WATERMARKLIMIT <= height && isSyarah)
-        {
-             imagecont = gm(data.Body)
-                .resize(null, height)
-                // WATERMARK - PARAM ORDER: [X Pos, Y Pos, width, height]
-                .draw(['gravity Center image Over  0,0 0,0 "'+watermark+'"']).gravity('Center');
-        }else {
-            imagecont = gm(data.Body)
-                .resize(null, height);
-        }
+        var  imagecont = gm(data.Body).resize(null, height);
+        // if(WATERMARKLIMIT <= height && isSyarah)
+        // {
+        //      imagecont = gm(data.Body)
+        //         .resize(null, height)
+        //         // WATERMARK - PARAM ORDER: [X Pos, Y Pos, width, height]
+        //         .draw(['gravity Center image Over  0,0 0,0 "'+watermark+'"']).gravity('Center');
+        // }else {
+        //     imagecont = gm(data.Body)
+        //         .resize(null, height);
+        // }
 
         return imagecont
-            .quality(70)
+            .quality(75)
             .toBuffer(ext, (err, buffer) => {
                 if (err) {
                     console.error(err);
-                    return callback(err);
+                    return callback(err.message);
                 }
                 return S3.putObject({
                     Body: buffer,
@@ -65,7 +66,7 @@ exports.handler = function (event, context, callback) {
                 }, (err) => {
                     if (err) {
                         console.error(err);
-                        return callback(err);
+                        return callback(err.message);
                     }
                     return callback(null, {
                         statusCode: '301',
